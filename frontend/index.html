@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatGPT + SmartRide Agent</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #343541;
+      color: white;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .container {
+      max-width: 768px;
+      margin: 0 auto;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      background: #40414f;
+      padding: 12px 20px;
+      border-bottom: 1px solid #565869;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header h1 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .model-info {
+      background: #40414f;
+      border: 1px solid #565869;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .calendar-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      cursor: pointer;
+      width: 100%;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      transition: transform 0.2s;
+    }
+
+    .calendar-btn:hover {
+      transform: scale(1.02);
+    }
+
+    .message {
+      margin-bottom: 24px;
+      display: flex;
+      gap: 16px;
+    }
+
+    .message.assistant {
+      background: #444654;
+      margin: 0 -20px 24px -20px;
+      padding: 20px;
+    }
+
+    .avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .avatar.user {
+      background: #5436DA;
+      color: white;
+    }
+
+    .avatar.assistant {
+      background: #10a37f;
+      color: white;
+    }
+
+    .message-content {
+      flex: 1;
+      line-height: 1.5;
+    }
+
+    .input-area {
+      padding: 20px;
+      background: #343541;
+      border-top: 1px solid #565869;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    .input-field {
+      flex: 1;
+      background: #40414f;
+      border: 1px solid #565869;
+      border-radius: 12px;
+      padding: 12px 16px;
+      color: white;
+      font-size: 16px;
+      resize: none;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .input-field::placeholder {
+      color: #8e8ea0;
+    }
+
+    .send-btn {
+      background: #10a37f;
+      border: none;
+      border-radius: 6px;
+      width: 32px;
+      height: 32px;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .send-btn:hover {
+      background: #0d8c6b;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .calendar-modal {
+      background: #343541;
+      width: 90%;
+      max-width: 1100px;
+      height: 85vh;
+      max-height: 700px;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .modal-header {
+      background: #40414f;
+      padding: 16px 20px;
+      border-bottom: 1px solid #565869;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .close-btn {
+      background: transparent;
+      border: none;
+      color: #9ca3af;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .close-btn:hover {
+      color: white;
+    }
+
+    .modal-body {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .calendar-section {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .month-header {
+      text-align: center;
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: white;
+    }
+
+    .calendar-grid {
+      background: #40414f;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+
+    .weekday {
+      text-align: center;
+      font-size: 11px;
+      color: #9ca3af;
+      padding: 4px;
+      font-weight: 600;
+    }
+
+    .days-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+
+    .day-cell {
+      aspect-ratio: 1;
+      background: #343541;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .day-cell:hover {
+      background: #4a5568;
+      transform: scale(1.05);
+    }
+
+    .day-cell.today {
+      background: #10a37f;
+      color: white;
+      font-weight: bold;
+    }
+
+    .day-cell.selected {
+      background: #667eea;
+      color: white;
+    }
+
+    .day-cell.has-events::after {
+      content: '';
+      position: absolute;
+      bottom: 4px;
+      width: 4px;
+      height: 4px;
+      background: #fbbf24;
+      border-radius: 50%;
+    }
+
+    .chat-panel {
+      background: #40414f;
+      border-radius: 8px;
+      padding: 16px;
+      border: 1px solid #565869;
+    }
+
+    .chat-header {
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: white;
+      font-size: 14px;
+    }
+
+    .chat-messages {
+      height: 200px;
+      background: #343541;
+      border-radius: 6px;
+      padding: 8px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+    }
+
+    .chat-msg {
+      font-size: 12px;
+      padding: 3px 0;
+      color: #d1d5db;
+    }
+
+    .chat-msg.user {
+      color: #9ca3af;
+    }
+
+    .chat-msg.agent {
+      color: #10a37f;
+    }
+
+    .chat-controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .chat-input {
+      flex: 1;
+      background: #343541;
+      border: 1px solid #565869;
+      border-radius: 6px;
+      padding: 8px;
+      color: white;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .chat-send-btn {
+      background: #10a37f;
+      border: none;
+      border-radius: 6px;
+      width: 32px;
+      height: 32px;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .sidebar {
+      width: 320px;
+      background: #40414f;
+      border-left: 1px solid #565869;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #565869;
+    }
+
+    .tab {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 12px;
+      color: #9ca3af;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+
+    .tab.active {
+      background: #343541;
+      color: white;
+      border-bottom: 2px solid #10a37f;
+    }
+
+    .tab-panel {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+    }
+
+    .event-item {
+      background: #4a5568;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 8px;
+      border-left: 3px solid #10a37f;
+      animation: slideIn 0.3s;
+    }
+
+    .event-item.scheduled {
+      border-left-color: #fbbf24;
+      background: #4a4558;
+    }
+
+    .event-item.ride {
+      border-left-color: #10a37f;
+    }
+
+    .event-time {
+      font-size: 12px;
+      font-weight: 600;
+      color: white;
+      margin-bottom: 2px;
+    }
+
+    .event-desc {
+      font-size: 11px;
+      color: #d1d5db;
+    }
+
+    .stats-card {
+      background: #059669;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .stats-number {
+      font-size: 28px;
+      font-weight: bold;
+      color: white;
+    }
+
+    .stats-label {
+      font-size: 12px;
+      color: rgba(255,255,255,0.9);
+    }
+
+    .ride-item {
+      background: #4a5568;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 8px;
+      border-left: 3px solid #10a37f;
+    }
+
+    .ride-route {
+      font-size: 12px;
+      font-weight: 600;
+      color: white;
+      margin-bottom: 4px;
+    }
+
+    .ride-details {
+      font-size: 10px;
+      color: #d1d5db;
+    }
+
+    .price-tag {
+      color: #10a37f;
+      font-weight: bold;
+    }
+
+    .saved-badge {
+      background: #059669;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 9px;
+      display: inline-block;
+      margin-left: 4px;
+    }
+
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #10a37f;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(16, 163, 127, 0.3);
+      z-index: 2000;
+      transform: translateX(400px);
+      transition: transform 0.3s;
+      font-size: 14px;
+      max-width: 320px;
+    }
+
+    .notification.show {
+      transform: translateX(0);
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>ChatGPT</h1>
+      <div class="model-info">GPT-4 + SmartRide Agent</div>
+    </div>
+
+    <div class="messages" id="mainChat">
+      <button class="calendar-btn" id="openCalendarBtn">
+        📅 Click here to open SmartRide Calendar
+        <div style="font-size: 12px; opacity: 0.9; margin-top: 4px;">
+          Access your ride calendar with smart AI booking
+        </div>
+      </button>
+
+      <div class="message assistant">
+        <div class="avatar assistant">🤖</div>
+        <div class="message-content">
+          <p>Hello! I'm ChatGPT enhanced with SmartRide Agent capabilities. I can help you book rides, optimize schedules, and manage your transportation intelligently.</p>
+          <p>Try asking: "Book a ride to office" or "Schedule ride home" to see the agent in action!</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-wrapper">
+        <textarea class="input-field" id="mainInput" placeholder="Message ChatGPT..." rows="1"></textarea>
+        <button class="send-btn" id="mainSendBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22,2 15,22 11,13 2,9 22,2"></polygon>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="calendar-modal">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>🤖</span>
+          <span>SmartRide Agent Calendar</span>
+        </div>
+        <button class="close-btn" id="closeBtn">×</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="calendar-section">
+          <h2 class="month-header">September 2025</h2>
+
+          <div class="calendar-grid">
+            <div class="weekdays">
+              <div class="weekday">Sun</div>
+              <div class="weekday">Mon</div>
+              <div class="weekday">Tue</div>
+              <div class="weekday">Wed</div>
+              <div class="weekday">Thu</div>
+              <div class="weekday">Fri</div>
+              <div class="weekday">Sat</div>
+            </div>
+            <div class="days-grid" id="calendarDays"></div>
+          </div>
+
+          <div class="chat-panel">
+            <div class="chat-header">🤖 Chat with SmartRide Agent</div>
+            <div class="chat-messages" id="agentChat"></div>
+            <div class="chat-controls">
+              <input class="chat-input" id="agentInput" placeholder="Book ride, check prices..." />
+              <button class="chat-send-btn" id="agentSendBtn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22,2 15,22 11,13 2,9 22,2"></polygon>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar">
+          <div class="tabs">
+            <button class="tab active" data-tab="today" id="todayTab">Today</button>
+            <button class="tab" data-tab="savings" id="savingsTab">Savings</button>
+            <button class="tab" data-tab="tips" id="tipsTab">Smart Tips</button>
+          </div>
+          <div class="tab-panel" id="tabPanel"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // API Configuration
+    const API_BASE = 'http://localhost:3003';
+
+    // Application State Manager
+    const AppState = {
+      data: {
+        bookingCounter: 0,
+        selectedDate: 12,
+        currentTab: 'today',
+        events: {
+          12: [
+            { id: 1, time: '9:30 AM', title: 'Team Meeting - Conference Room A', type: 'meeting' }
+          ]
+        },
+        bookedRides: [],
+        totalSavings: 347
+      },
+
+      addBookedRide: function(ride) {
+        ride.id = ride.id || Date.now();
+        this.data.bookedRides.push(ride);
+        this.data.totalSavings += ride.saved || 0;
+        console.log('Ride added to state:', ride);
+      },
+
+      deleteRide: function(rideId) {
+        const rideIndex = this.data.bookedRides.findIndex(r => r.id == rideId);
+        if (rideIndex > -1) {
+          const deletedRide = this.data.bookedRides.splice(rideIndex, 1)[0];
+          this.data.totalSavings -= (deletedRide.saved || 0);
+          return deletedRide;
+        }
+        return null;
+      },
+
+      updateRide: function(rideId, updates) {
+        const ride = this.data.bookedRides.find(r => r.id == rideId);
+        if (ride) {
+          Object.assign(ride, updates);
+          return ride;
+        }
+        return null;
+      },
+
+      getBookedRides: function() {
+        return this.data.bookedRides;
+      }
+    };
+
+    window.AppState = AppState;
+
+    // Initialize Application
+    document.addEventListener('DOMContentLoaded', function() {
+      initializeApp();
+    });
+
+    function initializeApp() {
+      document.getElementById('openCalendarBtn').addEventListener('click', openCalendar);
+      document.getElementById('closeBtn').addEventListener('click', closeCalendar);
+      document.getElementById('mainSendBtn').addEventListener('click', sendMainMessage);
+      document.getElementById('agentSendBtn').addEventListener('click', sendAgentMessage);
+
+      document.getElementById('mainInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMainMessage();
+        }
+      });
+
+      document.getElementById('agentInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          sendAgentMessage();
+        }
+      });
+
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+          const tabName = this.getAttribute('data-tab');
+          switchTab(tabName);
+        });
+      });
+
+      renderCalendar();
+      renderTab('today');
+    }
+
+    function openCalendar() {
+      document.getElementById('modalOverlay').classList.add('active');
+      renderCalendar();
+      renderTab(AppState.data.currentTab);
+    }
+
+    function closeCalendar() {
+      document.getElementById('modalOverlay').classList.remove('active');
+    }
+
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.getAttribute('data-tab') === tabName) {
+          tab.classList.add('active');
+        }
+      });
+
+      AppState.data.currentTab = tabName;
+      renderTab(tabName);
+    }
+
+    function renderCalendar() {
+      const container = document.getElementById('calendarDays');
+      let html = '';
+
+      for (let i = 0; i < 1; i++) {
+        html += '<div class="day-cell" style="opacity: 0;"></div>';
+      }
+
+      for (let day = 1; day <= 30; day++) {
+        const hasEvents = AppState.data.events[day] && AppState.data.events[day].length > 0;
+        const isToday = day === 12;
+        const isSelected = day === AppState.data.selectedDate;
+
+        let classes = 'day-cell';
+        if (isToday) classes += ' today';
+        if (isSelected) classes += ' selected';
+        if (hasEvents) classes += ' has-events';
+
+        html += `<div class="${classes}" onclick="selectDay(${day})">${day}</div>`;
+      }
+
+      container.innerHTML = html;
+    }
+
+    function selectDay(day) {
+      AppState.data.selectedDate = day;
+      renderCalendar();
+      switchTab('today');
+    }
+
+    function renderTab(tabName) {
+      const panel = document.getElementById('tabPanel');
+
+      if (tabName === 'today') {
+        renderTodayTab(panel);
+      } else if (tabName === 'savings') {
+        renderSavingsTab(panel);
+      } else if (tabName === 'tips') {
+        renderTipsTab(panel);
+      }
+    }
+
+    function renderTodayTab(panel) {
+      const dayEvents = AppState.data.events[AppState.data.selectedDate] || [];
+      let html = `<h3 style="color: white; font-size: 14px; margin-bottom: 12px;">📅 September ${AppState.data.selectedDate}, 2025</h3>`;
+
+      if (dayEvents.length === 0) {
+        html += '<p style="color: #9ca3af; font-size: 12px;">No events scheduled</p>';
+      } else {
+        dayEvents.forEach(event => {
+          const eventClass = event.type === 'ride' ? 'ride' : event.type === 'scheduled' ? 'scheduled' : '';
+          html += `
+            <div class="event-item ${eventClass}">
+              <div class="event-time">${event.time}</div>
+              <div class="event-desc">${event.title}</div>
+            </div>
+          `;
+        });
+      }
+
+      panel.innerHTML = html;
+    }
+
+    function renderSavingsTab(panel) {
+      const bookedRides = AppState.getBookedRides();
+      const totalRides = 89 + bookedRides.length;
+      const avgSaved = totalRides > 0 ? Math.round(AppState.data.totalSavings / totalRides) : 0;
+
+      let html = `
+        <div class="stats-card">
+          <div class="stats-number">$${AppState.data.totalSavings.toFixed(2)}</div>
+          <div class="stats-label">Total Saved This Month</div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 16px;">
+          <div style="background: #4a5568; border-radius: 6px; padding: 8px; text-align: center;">
+            <div style="font-size: 18px; font-weight: bold; color: white;">${totalRides}</div>
+            <div style="font-size: 10px; color: #d1d5db;">Total Rides</div>
+          </div>
+          <div style="background: #4a5568; border-radius: 6px; padding: 8px; text-align: center;">
+            <div style="font-size: 18px; font-weight: bold; color: white;">4.8⭐</div>
+            <div style="font-size: 10px; color: #d1d5db;">Avg Rating</div>
+          </div>
+          <div style="background: #4a5568; border-radius: 6px; padding: 8px; text-align: center;">
+            <div style="font-size: 18px; font-weight: bold; color: white;">23%</div>
+            <div style="font-size: 10px; color: #d1d5db;">Avg Savings</div>
+          </div>
+          <div style="background: #4a5568; border-radius: 6px; padding: 8px; text-align: center;">
+            <div style="font-size: 18px; font-weight: bold; color: white;">$${avgSaved}</div>
+            <div style="font-size: 10px; color: #d1d5db;">Per Ride Saved</div>
+          </div>
+        </div>
+
+        <h4 style="color: white; font-size: 12px; margin-bottom: 8px;">
+          Ride History ${bookedRides.length > 0 ? `(${bookedRides.length} new)` : ''}
+        </h4>
+        <div style="max-height: 300px; overflow-y: auto;">
+      `;
+
+      if (bookedRides.length > 0) {
+        bookedRides.forEach(ride => {
+          html += `
+            <div class="ride-item">
+              <div class="ride-route">${ride.from} → ${ride.to}</div>
+              <div class="ride-details">
+                <span class="price-tag">$${ride.price}</span>
+                <span class="saved-badge">Saved $${ride.saved || 0}</span>
+                • ${ride.service} • ${ride.date}
+              </div>
+            </div>
+          `;
+        });
+      }
+
+      const historicalRides = [
+        { from: 'Home', to: 'Office', price: 16, saved: 4, service: 'Lyft', date: 'Sep 3, 8:30 AM' },
+        { from: 'Office', to: 'Home', price: 24, saved: 8, service: 'Uber Pool', date: 'Sep 2, 6:15 PM' },
+        { from: 'Home', to: 'Airport', price: 45, saved: 15, service: 'Lyft XL', date: 'Sep 1, 2:00 PM' },
+        { from: 'Downtown', to: 'Home', price: 19, saved: 6, service: 'Uber', date: 'Aug 31, 9:30 PM' },
+        { from: 'Home', to: 'Mall', price: 12, saved: 3, service: 'Lyft', date: 'Aug 30, 3:00 PM' }
+      ];
+
+      historicalRides.forEach(ride => {
+        html += `
+          <div class="ride-item" style="opacity: 0.7;">
+            <div class="ride-route">${ride.from} → ${ride.to}</div>
+            <div class="ride-details">
+              <span class="price-tag">$${ride.price}</span>
+              <span class="saved-badge">Saved $${ride.saved}</span>
+              • ${ride.service} • ${ride.date}
+            </div>
+          </div>
+        `;
+      });
+
+      html += '</div>';
+      panel.innerHTML = html;
+    }
+
+    function renderTipsTab(panel) {
+      panel.innerHTML = `
+        <div class="event-item">
+          <div style="color: white; font-size: 12px; font-weight: 600;">💰 Price Optimization</div>
+          <div style="color: #d1d5db; font-size: 11px;">Morning rides 30% cheaper at 7:45 AM</div>
+        </div>
+        <div class="event-item">
+          <div style="color: white; font-size: 12px; font-weight: 600;">🌧️ Weather Alert</div>
+          <div style="color: #d1d5db; font-size: 11px;">Booked tomorrow's ride in advance due to rain forecast</div>
+        </div>
+      `;
+    }
+
+    function sendMainMessage() {
+      const input = document.getElementById('mainInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      addMainMessage('user', text);
+      input.value = '';
+
+      setTimeout(() => {
+        if (text.toLowerCase().includes('book') || text.toLowerCase().includes('schedule') || text.toLowerCase().includes('cancel') || text.toLowerCase().includes('change') || text.toLowerCase().includes('show')) {
+          addMainMessage('assistant',
+            "I'll help you with that! Opening SmartRide Calendar to process your request...");
+          setTimeout(() => {
+            openCalendar();
+            processRideRequest(text);
+          }, 1000);
+        } else {
+          addMainMessage('assistant',
+            "I can help you book rides and manage your schedule. Try asking me to 'book a ride to office' or 'cancel my ride'!");
+        }
+      }, 800);
+    }
+
+    function sendAgentMessage() {
+      const input = document.getElementById('agentInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      addAgentChat('user', text);
+      input.value = '';
+
+      setTimeout(() => processRideRequest(text), 500);
+    }
+
+    async function processRideRequest(text) {
+      try {
+        const response = await fetch(`${API_BASE}/api/process-command`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            command: text,
+            user_context: {
+              selected_date: AppState.data.selectedDate,
+              current_rides: AppState.getBookedRides()
+            }
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          handleBackendResponse(result);
+        } else {
+          addAgentChat('agent', `❌ ${result.error}`);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        addAgentChat('agent', '❌ Connection error. Please try again.');
+      }
+    }
+
+    function handleBackendResponse(result) {
+      // Display message from backend
+      if (result.message) {
+        addAgentChat('agent', result.message);
+      }
+
+      // Handle different action types
+      try {
+        switch (result.action) {
+          case 'book_ride':
+            handleRideBooking(result);
+            break;
+          case 'delete_ride':
+            handleRideDeletion(result);
+            break;
+          case 'update_ride':
+            handleRideUpdate(result);
+            break;
+          case 'list_rides':
+            handleRideList(result);
+            break;
+          case 'schedule_recurring':
+            handleRecurringSchedule(result);
+            break;
+        }
+
+        // Show notification if provided
+        if (result.notification) {
+          showNotification(result.notification);
+        }
+      } catch (error) {
+        console.error('Error handling response:', error);
+      }
+    }
+
+    function handleRideBooking(result) {
+      if (result.ride_data) {
+        const rideData = result.ride_data;
+        const newRide = {
+          id: rideData.id,
+          from: rideData.from,
+          to: rideData.to,
+          price: parseFloat(rideData.price),
+          saved: parseFloat(rideData.saved || 0),
+          service: rideData.service,
+          date: rideData.date,
+          time: rideData.time
+        };
+
+        // Add to app state
+        AppState.addBookedRide(newRide);
+
+        // Add to calendar
+        const targetDate = rideData.target_date || AppState.data.selectedDate;
+        addEventToCalendar(targetDate, {
+          id: rideData.id,
+          time: rideData.time || '9:00 AM',
+          title: `🚗 ${rideData.service} to ${rideData.to} (${rideData.price})`,
+          type: 'ride'
+        });
+
+        renderTab(AppState.data.currentTab);
+      }
+    }
+
+    function handleRideDeletion(result) {
+      if (result.deleted_ride) {
+        const deletedRideId = result.deleted_ride.id;
+        AppState.deleteRide(deletedRideId);
+        
+        // Remove from calendar
+        removeRideFromCalendar(deletedRideId);
+        
+        renderTab(AppState.data.currentTab);
+        renderCalendar();
+      }
+    }
+
+    function handleRideUpdate(result) {
+      if (result.updated_ride) {
+        const rideId = result.updated_ride.id;
+        const updates = result.updated_ride.updates;
+        
+        AppState.updateRide(rideId, updates);
+        
+        // Update calendar event
+        updateCalendarEvent(rideId, updates);
+        
+        renderTab(AppState.data.currentTab);
+        renderCalendar();
+      }
+    }
+
+    function handleRideList(result) {
+      // List handling is done in the message display
+      // No additional UI updates needed
+    }
+
+    function handleRecurringSchedule(result) {
+      if (result.events) {
+        result.events.forEach(event => {
+          addEventToCalendar(event.date, {
+            id: Date.now() + Math.random(),
+            time: event.time,
+            title: `📅 Recurring: Ride to ${event.destination}`,
+            type: 'scheduled'
+          });
+        });
+        renderTab(AppState.data.currentTab);
+        renderCalendar();
+      }
+    }
+
+    function addEventToCalendar(date, event) {
+      if (!AppState.data.events[date]) {
+        AppState.data.events[date] = [];
+      }
+      AppState.data.events[date].push(event);
+    }
+
+    function removeRideFromCalendar(rideId) {
+      // Remove ride event from calendar by ID
+      for (let date in AppState.data.events) {
+        AppState.data.events[date] = AppState.data.events[date].filter(event => 
+          event.id != rideId
+        );
+      }
+    }
+
+    function updateCalendarEvent(rideId, updates) {
+      // Update calendar event with new information
+      for (let date in AppState.data.events) {
+        const event = AppState.data.events[date].find(e => e.id == rideId);
+        if (event) {
+          if (updates.time) event.time = updates.time;
+          if (updates.destination) {
+            event.title = event.title.replace(/to \w+/, `to ${updates.destination}`);
+          }
+          break;
+        }
+      }
+    }
+
+    function addMainMessage(type, text) {
+      const container = document.getElementById('mainChat');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${type}`;
+
+      messageDiv.innerHTML = `
+        <div class="avatar ${type}">${type === 'user' ? 'Y' : '🤖'}</div>
+        <div class="message-content"><p>${text}</p></div>
+      `;
+
+      container.appendChild(messageDiv);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function addAgentChat(type, text) {
+      const container = document.getElementById('agentChat');
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `chat-msg ${type}`;
+      msgDiv.textContent = type === 'user' ? `You: ${text}` : text;
+      container.appendChild(msgDiv);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function showNotification(text) {
+      const notif = document.createElement('div');
+      notif.className = 'notification';
+      notif.textContent = text;
+      document.body.appendChild(notif);
+
+      setTimeout(() => notif.classList.add('show'), 100);
+
+      setTimeout(() => {
+        notif.classList.remove('show');
+        setTimeout(() => notif.remove(), 300);
+      }, 3500);
+    }
+
+    // Make selectDay globally accessible
+    window.selectDay = selectDay;
+  </script>
+</body>
+</html>
